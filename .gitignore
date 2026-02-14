@@ -1,1 +1,5 @@
 .env
+
+# Ignore Uploaded Media
+/uploads/*
+!/uploads/.gitkeep
