@@ -2,16 +2,24 @@
 date_default_timezone_set('Africa/Dar_es_Salaam');
 session_start();
 require 'db.php';
-if (!isset($_SESSION['user_id'])) { header("Location: welcome.php"); exit; }
+if (!isset($_SESSION['user_id'])) {
+    header("Location: welcome.php");
+    exit;
+}
 
 $uid = $_SESSION['user_id'];
 $me = $conn->query("SELECT * FROM users WHERE id = $uid")->fetch_assoc();
 
+$notif_res = $conn->query("SELECT COUNT(*) as c FROM matches WHERE (player_a_id = $uid AND paid_a = 0) OR (player_b_id = $uid AND paid_b = 0)");
+$notif_c = $notif_res ? (int)$notif_res->fetch_assoc()['c'] : 0;
+
 // Date Logic
 $date_str = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $curr = new DateTime($date_str);
-$prev = clone $curr; $prev->modify('-1 day');
-$next = clone $curr; $next->modify('+1 day');
+$prev = clone $curr;
+$prev->modify('-1 day');
+$next = clone $curr;
+$next->modify('+1 day');
 
 $is_today = ($date_str == date('Y-m-d'));
 $fixture_title = $is_today ? "TODAY'S MATCHES" : strtoupper($curr->format('d M')) . " MATCHES";
@@ -50,7 +58,8 @@ $matches = $conn->query("SELECT m.*, IF(m.player_a_id = $uid, u2.username, u1.us
             <div class="header-actions">
                 <button class="btn-icon" onclick="toggleNotif()">
                     <i class="fas fa-bell"></i>
-                    <?php if($notif_c > 0): ?><span class="notif-badge"></span><?php endif; ?>
+                    <?php if ($notif_c > 0): ?><span class="notif-badge"></span><?php
+endif; ?>
                 </button>
                 <div id="notifMenu" class="notif-menu">
                     <h4 style="color:var(--text-main); margin-bottom:10px;">ALERTS</h4>
@@ -92,28 +101,29 @@ $matches = $conn->query("SELECT m.*, IF(m.player_a_id = $uid, u2.username, u1.us
         <h3 class="section-title"><?php echo $fixture_title; ?></h3>
         
         <div class="match-list">
-            <?php if($matches->num_rows > 0): ?>
-                <?php while($row = $matches->fetch_assoc()): 
-    // 1. Determine Logic
-    $is_a = ($row['player_a_id'] == $uid);
-    $my_pay = $is_a ? $row['paid_a'] : $row['paid_b'];
-    $has_result = ($row['stats_applied'] == 1 || !empty($row['screenshot']));
-    $can_see = ($has_result && $my_pay == 1);
+            <?php if ($matches->num_rows > 0): ?>
+                <?php while ($row = $matches->fetch_assoc()):
+        // 1. Determine Logic
+        $is_a = ($row['player_a_id'] == $uid);
+        $my_pay = $is_a ? $row['paid_a'] : $row['paid_b'];
+        $has_result = ($row['stats_applied'] == 1 || !empty($row['screenshot']));
+        $can_see = ($has_result && $my_pay == 1);
 
-    // 2. Setup Home vs Away Display
-    if ($is_a) {
-        // I am HOME (Player A)
-        $home_name = $me['username'];
-        $away_name = $row['opponent'];
-        $home_color = 'var(--accent)'; // My Color
-        $away_color = '#ffffff';       // Opponent Color
-    } else {
-        // I am AWAY (Player B) -> Opponent is Home
-        $home_name = $row['opponent'];
-        $away_name = $me['username'];
-        $home_color = '#ffffff';       // Opponent Color
-        $away_color = 'var(--accent)'; // My Color
-    }
+        // 2. Setup Home vs Away Display
+        if ($is_a) {
+            // I am HOME (Player A)
+            $home_name = $me['username'];
+            $away_name = $row['opponent'];
+            $home_color = 'var(--accent)'; // My Color
+            $away_color = '#ffffff'; // Opponent Color
+        }
+        else {
+            // I am AWAY (Player B) -> Opponent is Home
+            $home_name = $row['opponent'];
+            $away_name = $me['username'];
+            $home_color = '#ffffff'; // Opponent Color
+            $away_color = 'var(--accent)'; // My Color
+        }
 ?>
 <div class="match-item">
     <div class="match-details">
@@ -136,33 +146,42 @@ $matches = $conn->query("SELECT m.*, IF(m.player_a_id = $uid, u2.username, u1.us
         <?php if ($can_see): ?>
             <?php echo $row['score_a'] . " - " . $row['score_b']; ?>
             
-            <?php if($row['screenshot']): ?>
+            <?php if ($row['screenshot']): ?>
                 <a href="uploads/<?php echo $row['screenshot']; ?>" target="_blank" style="display:block; font-size:0.7rem; color:#aaa; margin-top:5px; text-decoration:none;">
                     <i class="fas fa-image"></i> Proof
                 </a>
-            <?php endif; ?>
-        <?php else: ?>
+            <?php
+            endif; ?>
+        <?php
+        else: ?>
             <span style="color:#444; font-size:1.2rem;">-- : --</span>
-        <?php endif; ?>
+        <?php
+        endif; ?>
     </div>
 
     <div class="match-action">
         <?php if ($my_pay == 0): ?>
             <a href="payment.php?match_id=<?php echo $row['id']; ?>" class="btn btn-pay">PAY 200/=</a>
-        <?php elseif ($my_pay == 2): ?>
+        <?php
+        elseif ($my_pay == 2): ?>
             <span class="status-badge st-paid">Verifying</span>
-        <?php else: ?>
+        <?php
+        else: ?>
             <span class="status-badge st-done">PAID</span>
-        <?php endif; ?>
+        <?php
+        endif; ?>
     </div>
 </div>
-<?php endwhile; ?>
-            <?php else: ?>
+<?php
+    endwhile; ?>
+            <?php
+else: ?>
                 <div style="text-align:center; padding:50px; color:#444; border:1px dashed #333; border-radius:12px;">
                     <i class="fas fa-calendar-times" style="font-size:2rem; margin-bottom:10px;"></i><br>
                     NO MATCHES SCHEDULED
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
         </div>
     </div>
 
@@ -179,16 +198,18 @@ $matches = $conn->query("SELECT m.*, IF(m.player_a_id = $uid, u2.username, u1.us
                     <th style="padding-bottom:10px;">GD</th>
                     <th style="padding-bottom:10px;">PTS</th>
                 </tr>
-                <?php 
-                $leaders = $conn->query("SELECT username, total_points, goal_diff FROM users WHERE status='Active' ORDER BY total_points DESC, goal_diff DESC, total_goals DESC");
-                $r=1; while($l = $leaders->fetch_assoc()): ?>
+                <?php
+$leaders = $conn->query("SELECT username, total_points, goal_diff FROM users WHERE status='Active' ORDER BY total_points DESC, goal_diff DESC, total_goals DESC");
+$r = 1;
+while ($l = $leaders->fetch_assoc()): ?>
                 <tr style="border-bottom:1px solid #222;">
                     <td style="padding:12px 0; color:var(--accent);"><?php echo $r++; ?></td>
                     <td style="padding:12px 0;"><?php echo htmlspecialchars($l['username']); ?></td>
                     <td style="padding:12px 0; color:#888;"><?php echo $l['goal_diff']; ?></td>
                     <td style="padding:12px 0; font-weight:bold; color:white;"><?php echo $l['total_points']; ?></td>
                 </tr>
-                <?php endwhile; ?>
+                <?php
+endwhile; ?>
             </table>
         </div>
     </div>
